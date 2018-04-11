@@ -3,12 +3,12 @@
 Running the program: 
 
 First you need to create a montainer.ini file:
-
-[GENERAL] <br />
-SYNCTIME = 3 <br />
-DOWNTIME = 1 <br />
-[PUSHBULLET] <br />
-TOKEN = INSERT PUSHBULLET TOKEN HERE <br />
+'''
+[GENERAL]
+SYNCTIME = 3
+DOWNTIME = 1
+[PUSHBULLET]
+TOKEN = INSERT PUSHBULLET TOKEN HERe '''
 
 Then you can run the program through docker: 
 
