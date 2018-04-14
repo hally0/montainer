@@ -10,26 +10,27 @@ class Config(object):
     def __init__(self, config_file):
         self._config_file = config_file
         self._config = configparser.ConfigParser()
+        try:
+            self._config.read_file(open(self._config_file))
+        except FileNotFoundError:
+            print("Couldn't find the configuration file. Please make sure it exists within the docker container")
+            exit(-1)
         self._config.read(self._config_file)
 
-    def exist(self, config):
-        pass
-
-    def write(self):
-        pass
-
     def get_sections(self, section):
+        """Return a section of the config"""
         try:
             section = self._config[section]
-        except KeyError as ex:
+        except configparser.NoSectionError as ex:
             logging.debug("Couldn't find the section")
             return
         return section
 
     def get_key(self, section, key):
+        """return a key of the config"""
         try:
             key = self._config[section][key]
-        except KeyError as ex:
+        except configparser.NoSectionError as ex:
             logging.debug("Couldn't find the key")
             return
         return key
