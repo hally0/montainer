@@ -1,2 +1,2 @@
-docker==3.2.0
+docker==3.2.1
 pushbullet.py==0.11.0
