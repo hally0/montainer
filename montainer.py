@@ -10,7 +10,7 @@ import datetime
 
 def signal_handler(signal, frame):
     """ Signal handler for shutting down the program."""
-    print("You pressed Ctrl+C! Shutting down.")
+    print("Shutting down the program gracefully")
     events.close()
     logging.shutdown()
     sys.exit(0)
@@ -83,7 +83,7 @@ if __name__ == '__main__':
 
     events = client.events(filters=filters, decode=True)
 
-    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGTERM, signal_handler)
     # Make a thread to read the event stream
     t = threading.Thread(name="Event generator", target=get_events, args=(events,))
     t.setDaemon(False)
