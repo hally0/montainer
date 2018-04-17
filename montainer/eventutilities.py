@@ -1,6 +1,15 @@
 import time
-
+from requests import get
 # TODO write more utilities for event_list and optimize code
+
+NOTIFIERS_TO_STRING = {'stop': {"Title": "A container has stopped on server IP: {ip}, Date: {time}",
+                                "Body": "Container name: {container}, ({image})",
+                                },
+                       'health_status: unhealthy': {"Title": "A container has failed a health test"
+                                                             " on serverIP: {ip}, Date: {time}",
+                                                    "Body": "Container name: {container}, ({image})",
+                                                    }
+                       }
 
 
 class EventUtilities(list):
@@ -35,15 +44,15 @@ class EventUtilities(list):
                                                  , time_local[3], time_local[4], time_local[5])
         return name, image, status, time_format
 
-    def event_general(self, event):
-        """Returns a string of event attributes for logging and notifying"""
+    def event_logger(self, event):
+        """Returns a string of event attributes for logging"""
         name, image, status, time_format = self.get_events_attributes(event)
         return "Container: {}, image: {}, status: {}, time: {}".format(name, image, status, time_format)
 
-    def event_title(self, event):
-        """Returns a string of event attributes for titling a notification"""
+    def build_text(self, event):
+        ip = get('https://api.ipify.org').text
         name, image, status, time_format = self.get_events_attributes(event)
-        if status == "stop":
-            return "Container: {}, is stopped, Date: {}".format(name, time_format)
-        if status == "health_status=unhealty":
-            return "Container: {}, is unhealthy. Date: {}". format(name, time_format)
+        liste = NOTIFIERS_TO_STRING
+        title = liste[status]['Title'].format(ip=ip, container=name, time=time_format,)
+        body = liste[status]['Body'].format(container=name, image=image, time=time_format)
+        return title, body

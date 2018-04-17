@@ -1,4 +1,4 @@
-from montainer import eventutilities, notifier, config
+from montainer import notifier, eventutilities, config
 import time
 import threading
 import logging
@@ -24,10 +24,10 @@ def check_event(e):
     event_status = e.get("status")
 
     if event_status == "stop" or event_status == "health_status: unhealthy":
-        logging.debug(event_status)
         logging.debug("Appending event to list ")
         if not events_list.exist(e):
             events_list.append(e)
+            events_list.build_text(e)
 
     if event_status == "start" or event_status == "health_status: healthy":
         for ev in events_list:
@@ -67,7 +67,7 @@ def get_events(events_generator):
 if __name__ == '__main__':
     # Import downtime and synctime from the configuration file.
     config_file = config.Config("montainer.ini")
-    config_section = config_file.get_sections("GENERAL")
+    config_section = config_file.get_section("GENERAL")
     _SYNCTIME = int(config_section["SYNCTIME"])
     _DOWNTIME = int(config_section["DOWNTIME"])
     # Making the loggin configuration
@@ -92,11 +92,12 @@ if __name__ == '__main__':
     while True:
         for event in events_list:
             if check_time(event):
-                title = events_list.event_title(event)
-                body = events_list.event_general(event)
-                if notifier.Notifier().send_pushbullet(title, body):
+                title, body = events_list.build_text(event)
+                print(title + body)
+                if notifier.send_notifications(title, body):
                     events_list.remove(event)
                     logging.debug("Successfully sent out notification. Removing (" + ") from the list.")
                 else:
-                    logging.debug("Couldn't send notification. Retrying until success.")
+                    events_list.remove(event)
+                    logging.debug("Couldn't send out notifications.")
         time.sleep(_SYNCTIME)
