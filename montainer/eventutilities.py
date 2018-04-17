@@ -2,12 +2,12 @@ import time
 from requests import get
 # TODO write more utilities for event_list and optimize code
 
-NOTIFIERS_TO_STRING = {'stop': {"Title": "A container has stopped on server IP: {ip}, Date: {time}",
-                                "Body": "Container name: {container}, ({image})",
+NOTIFIERS_TO_STRING = {'stop': {"Title": "A container stopped on server IP: {ip}, Date: {time}",
+                                "Body": "Container name: {container}, image: ({image})",
                                 },
                        'health_status: unhealthy': {"Title": "A container has failed a health test"
-                                                             " on serverIP: {ip}, Date: {time}",
-                                                    "Body": "Container name: {container}, ({image})",
+                                                             " on server IP: {ip}, Date: {time}",
+                                                    "Body": "Container name: {container}, image: ({image})",
                                                     }
                        }
 
@@ -40,8 +40,11 @@ class EventUtilities(list):
         image = event.get("Actor")["Attributes"]["image"]
         status = event.get("status")
         time_local = time.localtime(event.get("time"))
-        time_format = "{}/{}/{} {}:{}:{}".format(time_local[0], time_local[1], time_local[2]
-                                                 , time_local[3], time_local[4], time_local[5])
+        time_format = "{}/{}/{} {}:{}:{}".format(
+                                                 str(time_local[0]).zfill(2), str(time_local[1]).zfill(2),
+                                                 str(time_local[2]).zfill(2), str(time_local[3]).zfill(2),
+                                                 str(time_local[4]).zfill(2), str(time_local[5]).zfill(2),
+                                                 )
         return name, image, status, time_format
 
     def event_logger(self, event):

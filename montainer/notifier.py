@@ -8,8 +8,8 @@ import logging
 
 # TODO Extend class to support multiple notifiers and notifying stacks
 
-_ENVIRONMENT_SETTINGS = {'PUSHBULLET': {'TOKEN'},
-                         'PUSHOVER': {'TOKEN', 'USER'},
+_ENVIRONMENT_SETTINGS = {'PUSHBULLET': {'PB_TOKEN'},
+                         'PUSHOVER': {'PO_TOKEN', 'USER_TOKEN'},
                          'EMAIL': {'test'},
                          }
 
