@@ -1,5 +1,6 @@
 import time
 from requests import get
+import logging
 # TODO write more utilities for event_list and optimize code
 
 NOTIFIERS_TO_STRING = {'stop': {"Title": "A container stopped on server IP: {ip}, Date: {time}",
@@ -8,8 +9,19 @@ NOTIFIERS_TO_STRING = {'stop': {"Title": "A container stopped on server IP: {ip}
                        'health_status: unhealthy': {"Title": "A container has failed a health test"
                                                              " on server IP: {ip}, Date: {time}",
                                                     "Body": "Container name: {container}, image: ({image})",
-                                                    }
+                                                    },
+                       'Multiple': {"Title": "Multiple containers are having issues on IP: {ip}, Date: {time}",
+                                    "Body": "Container name: {container} \nStatus: {status} \nImage: ({image})"
+
+                                    }
                        }
+
+_IP = ''
+
+
+def set_ip():
+    global _IP
+    _IP = get('https://api.ipify.org').text
 
 
 class EventUtilities(list):
@@ -25,11 +37,32 @@ class EventUtilities(list):
                 return i
             i += 1
 
-    def exist(self, event):
+    def exist_append(self, event):
         """Checks if a event exists"""
         for events in self:
             if events.get("id") == event.get("id"):
                 return True
+        return False
+
+    def exist_remove(self, event):
+        """Checks if a event exists"""
+        name = event.get("Actor")["Attributes"]["name"]
+        image = event.get("Actor")["Attributes"]["image"]
+        docker_number = event.get("Actor")["Attributes"]["com.docker.compose.container-number"]
+        for events in self:
+            if events.get("id") == event.get("id"):
+                logging.debug("Id Matches")
+                self.remove(events)
+                return True
+            try:
+                if events.get('Actor')['Attributes']['com.docker.compose.container-number'] == docker_number:
+                    logging.debug("Found docker-compose number label on the container:" + docker_number)
+                    self.remove(events)
+                    return True
+            except KeyError:
+                logging.debug("Could not find the label or id.")
+                return False
+
         return False
 
     def get_events_attributes(self, event):
@@ -52,10 +85,19 @@ class EventUtilities(list):
         name, image, status, time_format = self.get_events_attributes(event)
         return "Container: {}, image: {}, status: {}, time: {}".format(name, image, status, time_format)
 
-    def build_text(self, event):
-        ip = get('https://api.ipify.org').text
+    def build_text_event(self, event):
         name, image, status, time_format = self.get_events_attributes(event)
         liste = NOTIFIERS_TO_STRING
-        title = liste[status]['Title'].format(ip=ip, container=name, time=time_format,)
+        title = liste[status]['Title'].format(ip=_IP, container=name, time=time_format,)
         body = liste[status]['Body'].format(container=name, image=image, time=time_format)
+        return title, body
+
+    def build_test_event_list(self, events):
+        name, image, status, time_format = self.get_events_attributes(events[0])
+        liste = NOTIFIERS_TO_STRING
+        title = liste['Multiple']['Title'].format(ip=_IP, container=name, time=time_format,)
+        body = ""
+        for event in events:
+            name, image, status, time_format = self.get_events_attributes(event)
+            body += liste['Multiple']['Body'].format(container=name, status=status, image=image) + "\n\n"
         return title, body

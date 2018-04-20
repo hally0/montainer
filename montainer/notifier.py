@@ -3,6 +3,8 @@ from montainer import config
 import http.client
 import urllib.parse
 import logging
+import smtplib
+from email.mime.text import MIMEText
 
 """ This module will be extended to act as a central for notifying several different devices through many options """
 
@@ -10,7 +12,7 @@ import logging
 
 _ENVIRONMENT_SETTINGS = {'PUSHBULLET': {'PB_TOKEN'},
                          'PUSHOVER': {'PO_TOKEN', 'USER_TOKEN'},
-                         'EMAIL': {'test'},
+                         'EMAIL': {'SMTP_ADDRESS', 'SMTP_PORT', 'USERNAME', 'PASSWORD'},
                          }
 
 
