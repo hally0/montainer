@@ -149,7 +149,7 @@ class EmailNotifier(Notifier):
             body = body
             msg.attach(MIMEText(body, 'plain'))
             server = smtplib.SMTP(self.config_section['SMTP_ADDRESS'], self.config_section['SMTP_PORT'])
-            if self.config_section['TLS']:
+            if self.config_section['TLS'] == "true":
                 server.starttls()
             server.login(from_address, self.config_section['PASSWORD'])
 

@@ -3,7 +3,8 @@
 This program monitors the container on the docker socket. If a container stops or fails a health test,
 Montainer sends a notification trough selected outputs in the montainer.ini file.
 
-Montainer only support Pushbullet for now. More notifiers will be implemented soon. 
+Montainer supports Pushbullet, Pushover and Email. More notifiers will be implemented soon. 
+Docker-compose is supported through searching the docker-compose id for each event.
 
 Running the program: 
 
@@ -13,8 +14,31 @@ First you need to create a montainer.ini file. Example configuration:
 [GENERAL]
 SYNCTIME = 3
 DOWNTIME = 60
+ 
 [PUSHBULLET]
-TOKEN = INSERT PUSHBULLET TOKEN HERE
+PB_TOKEN = Insert Pushbullet token here
+ 
+[PUSHOVER]
+PO_TOKEN = Insert Pushover token here
+USER_TOKEN = Insert Pushover user token here
+ 
+[EMAIL]
+SMTP_ADDRESS = Your SMTP address
+SMTP_PORT = insert SMTP port here
+PASSWORD = Your password
+FROM = Send mail from
+TO = Send mail to
+TLS = true, if you want to use TLS
+```
+To use a notifier, fill the montainer.ini with the appropriate notifiers. If you want to use Pushbullet,
+ simply remove all the other sections (Pushover, Email in this case). Your ini file should look like this:
+```
+[GENERAL]
+SYNCTIME = 3
+DOWNTIME = 60
+[PUSHBULLET]
+PB_TOKEN = Insert Pushbullet token here
+
 ```
 
 SYNCTIME is measured in seconds, and it tells the program when to check for DOWNTIME.
