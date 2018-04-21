@@ -1,9 +1,8 @@
 import configparser
 import logging
 
-# TODO Write tests and update class with more sections
 
-NOTIFIERS_LIST = dict(PUSHBULLET="PushbulletNotifier", PUSHOVER="PushoverNotifier", EMAIL="EmailNotifier")
+_NOTIFIERS = ["PUSHBULLET", "PUSHOVER", "EMAIL", "DISCORD", "SLACK"]
 
 # Making a validate method
 _CONFIG_SETTINGS = {"_SYNCTIME": (int, "GENERAL", 1),
@@ -15,7 +14,8 @@ _CONFIG_SETTINGS = {"_SYNCTIME": (int, "GENERAL", 1),
 
 
 class Config(object):
-    """ This class reads from a configuration file and will provide several utilities for configuration files """
+    """ This class reads from a configuration file and provides several utilities for reading and parsing the
+    configuration file."""
 
     def __init__(self, config_file):
         self._config_file = config_file
@@ -47,8 +47,9 @@ class Config(object):
         return sections
 
     def get_notifiers(self):
+        """Return a available notifiers"""
         config = self._config.sections()
-        return set(config).intersection(NOTIFIERS_LIST)
+        return set(config).intersection(_NOTIFIERS)
 
     def get_key(self, section, key):
         """return a key of the config"""

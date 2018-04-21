@@ -1,7 +1,6 @@
-import time
-from requests import get
 import logging
-# TODO write more utilities for event_list and optimize code
+from requests import get
+import time
 
 NOTIFIERS_TO_STRING = {'stop': {"Title": "A container stopped on server IP: {ip}, Date: {time}",
                                 "Body": "Container name: {container}, image: ({image})",
@@ -25,7 +24,7 @@ def set_ip():
 
 
 class EventUtilities(list):
-    """ This class extends the list class, and will provide several functions for the main program. """
+    """ This class extends the list class, and provides several functions for the main program. """
     def __getitem__(self, key):
         return super(EventUtilities, self).__getitem__(key-1)
 
@@ -38,16 +37,14 @@ class EventUtilities(list):
             i += 1
 
     def exist_append(self, event):
-        """Checks if a event exists"""
+        """Checks if a event exists through id search"""
         for events in self:
             if events.get("id") == event.get("id"):
                 return True
         return False
 
     def exist_remove(self, event):
-        """Checks if a event exists"""
-        name = event.get("Actor")["Attributes"]["name"]
-        image = event.get("Actor")["Attributes"]["image"]
+        """Checks if a event exists through id and docker-compose id"""
         docker_number = event.get("Actor")["Attributes"]["com.docker.compose.container-number"]
         for events in self:
             if events.get("id") == event.get("id"):
@@ -86,6 +83,7 @@ class EventUtilities(list):
         return "Container: {}, image: {}, status: {}, time: {}".format(name, image, status, time_format)
 
     def build_text_event(self, event):
+        """Return a string of event attributes for single notifications"""
         name, image, status, time_format = self.get_events_attributes(event)
         liste = NOTIFIERS_TO_STRING
         title = liste[status]['Title'].format(ip=_IP, container=name, time=time_format,)
@@ -93,6 +91,7 @@ class EventUtilities(list):
         return title, body
 
     def build_test_event_list(self, events):
+        """Return a string of event attributes as a summary of events"""
         name, image, status, time_format = self.get_events_attributes(events[0])
         liste = NOTIFIERS_TO_STRING
         title = liste['Multiple']['Title'].format(ip=_IP, container=name, time=time_format,)

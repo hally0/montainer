@@ -1,28 +1,27 @@
-from montainer import notifier, eventutilities, config
-import time
-import threading
+import datetime
+import docker
 import logging
+from montainer import notifier, eventutilities, config
 import signal
 import sys
-import docker
-import datetime
+import threading
+import time
 
 
 def sigterm_handler(signal, frame):
-    """ Signal handler for shutting down the program."""
-    print("Shutting down the program gracefully")
+    """ Signal handler for shutting down the program through SIGTERM."""
+    logging.debug("Shutting down the program gracefully")
     events.close()
     logging.shutdown()
     sys.exit(0)
 
 
 def int_handler(signal, frame):
-    """ Signal handler for shutting down the program."""
-    print("Shutting down the program gracefully")
+    """ Signal handler for shutting down the program through ctrl + c."""
+    logging.debug("Shutting down the program gracefully")
     events.close()
     logging.shutdown()
-    threading.enumerate()
-    logging.debug(sys.exit(0))
+    sys.exit(0)
 
 
 def check_event(e):
@@ -43,7 +42,7 @@ def check_event(e):
 
 
 def check_time(e):
-    """ This function calulates the difference in time between the event and actual time.
+    """ This function calculates the difference in time between the event and actual time.
         If the container has been down for more than the DOWNTIME permits it will return True, else False."""
     now = datetime.datetime.now()
     event_time_hour = datetime.datetime.fromtimestamp(e.get("time")).strftime("%H")
@@ -70,6 +69,8 @@ def get_events(events_generator):
 
 
 def notify_stack(notifier_stack):
+    """This function waits for 10 seconds then sends notifications to available notifiers.
+    if the server have issues with multiple containers during the 10 second, montainer will send out a summary."""
     logging.debug("Notifier thread has started. Waiting 10 seconds to send out notifications")
     time.sleep(10)
     if len(notifier_list) > 1:
@@ -78,52 +79,56 @@ def notify_stack(notifier_stack):
         title, body = notifier_list.build_text_event(notifier_list[0])
     if notifier.send_notifications(title, body):
         logging.debug("Successfully sent out notifications")
+    else:
+        logging.debug("Failed to send out notifications")
+
+    # Clears the notification list and update the notifier_thread boolean
     notifier_list.clear()
     global notifier_thread
     notifier_thread = False
 
 
 if __name__ == '__main__':
-    # Import downtime and synctime from the configuration file.
-    config_file = config.Config("montainer.ini")
-    config_section = config_file.get_section("GENERAL")
-    _SYNCTIME = int(config_section["SYNCTIME"])
-    _DOWNTIME = int(config_section["DOWNTIME"])
+
+    # Signal handlers for SIGTERM and SIGINT signals
+    signal.signal(signal.SIGTERM, sigterm_handler)
+    signal.signal(signal.SIGINT, int_handler)
+
     # Making the logging configuration
     logging.basicConfig(level=logging.DEBUG,
                         format="%(asctime)s [%(levelname)s] (%(threadName)-10s) %(message)s",
                         datefmt="%m-%d %H:%M",
                         )
 
+    # Import downtime and synctime from the configuration file.
+    config_file = config.Config("montainer.ini")
+    config_section = config_file.get_section("GENERAL")
+    _SYNCTIME = int(config_section["SYNCTIME"])
+    _DOWNTIME = int(config_section["DOWNTIME"])
+
+    # Declaring the events list, notifier list and set the server ip
     events_list = eventutilities.EventUtilities()
-    events_list_test = eventutilities.EventUtilities()
-
-    notifier_list = eventutilities.EventUtilities()
     eventutilities.set_ip()
+    notifier_list = eventutilities.EventUtilities()
 
-    # Filters for the event stream. TODO make it so users can configure it from the configuration file.
+    # Filters for the event stream.
     filters = {"type": ["container"], "event": ["stop", "start", "health_status"]}
     client = docker.from_env()
 
-    events = client.events(filters=filters, decode=True)
-
-    signal.signal(signal.SIGTERM, sigterm_handler)
-    signal.signal(signal.SIGINT, int_handler)
-
-    notifier_thread = False
-
     # Make a thread to read the event stream
+    events = client.events(filters=filters, decode=True)
     thread_generator = threading.Thread(name="Event generator", target=get_events, daemon=True, args=(events,))
     thread_generator.start()
 
     # This loops handles the event_list and will notify clients if the container downtime exceeds _DOWNTIME
+    notifier_thread = False
     while True:
         for event in events_list:
             if check_time(event):
                 logging.debug("{} has been down for more than: {}s. Appending event to notifier stack".format(
                     event.get("Actor")["Attributes"]["name"], _DOWNTIME))
                 notifier_list.append(event)
-                if not notifier_thread:
+                if not notifier_thread: # check if notifier thread exist
                     thread_notifier = threading.Thread(name="Notifier", target=notify_stack, daemon=True, args=(event,))
                     thread_notifier.start()
                     notifier_thread = True
