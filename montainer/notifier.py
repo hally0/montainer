@@ -14,9 +14,7 @@ and makes a class for each available notifier. It also have several error detect
 
 _ENVIRONMENT_SETTINGS = {'PUSHBULLET': {'PB_TOKEN'},
                          'PUSHOVER': {'PO_TOKEN', 'USER_TOKEN'},
-                         'EMAIL': {'SMTP_ADDRESS', 'SMTP_PORT', 'USERNAME', 'PASSWORD', 'FROM', 'TO'},
-                         'SLACK': {},
-                         'DISCORD': {}
+                         'EMAIL': {'SMTP_ADDRESS', 'SMTP_PORT', 'PASSWORD', 'FROM', 'TO'}
                          }
 
 
@@ -32,10 +30,6 @@ def get_class(notifier_name):
         return PushoverNotifier(config_name=notifier_name,)
     if notifier_name == "EMAIL":
         return EmailNotifier(config_name=notifier_name,)
-    if notifier_name == "DISCORD":
-        return DiscordNotifier(config_name=notifier_name,)
-    if notifier_name == "SLACK":
-        return SlackNotifier(config_name=notifier_name,)
     else:
         return None
 
@@ -112,30 +106,6 @@ class PushoverNotifier(Notifier):
             return False
 
 
-class DiscordNotifier(Notifier):
-    def notify(self, title, body):
-        """ Sends a Discord notification"""
-        try:
-
-            return True
-        except Exception as ex:
-            logging.debug("""Failed to send Discord notification. You might not have internet for the container. 
-            Another cause might be a invalid configuration settings. Please edit your settings in montainer.ini.""")
-            return False
-
-
-class SlackNotifier(Notifier):
-    def notify(self, title, body):
-        """ Sends a Slack notification"""
-        try:
-
-            return True
-        except Exception as ex:
-            logging.debug("""Failed to send Slack notification. You might not have internet for the container. 
-            Another cause might be a invalid configuration settings. Please edit your settings in montainer.ini.""")
-            return False
-
-
 class EmailNotifier(Notifier):
     def notify(self, title, body):
         """ Sends a Email notification"""
@@ -146,10 +116,10 @@ class EmailNotifier(Notifier):
             msg['From'] = from_address
             msg['To'] = to_address
             msg['Subject'] = title
-            body = body
             msg.attach(MIMEText(body, 'plain'))
             server = smtplib.SMTP(self.config_section['SMTP_ADDRESS'], self.config_section['SMTP_PORT'])
             if self.config_section['TLS'] == "true":
+                server.ehlo()
                 server.starttls()
             server.login(from_address, self.config_section['PASSWORD'])
 
@@ -159,6 +129,7 @@ class EmailNotifier(Notifier):
             return True
 
         except Exception as ex:
+            logging.debug(ex)
             logging.debug("""Failed to send Email notification. You might not have internet for the container. 
             Another cause might be a invalid configuration settings. Please edit your settings in montainer.ini.""")
             return False

@@ -30,8 +30,8 @@ FROM = Send mail from
 TO = Send mail to
 TLS = true, if you want to use TLS
 ```
-To use a notifier, fill the montainer.ini with the appropriate notifiers. If you want to use Pushbullet,
- simply remove all the other sections (Pushover, Email in this case). Your ini file should look like this:
+To use a notifier, fill the montainer.ini with the appropriate notifiers. If you want to only use Pushbullet,
+ simply remove all the notifiers you don't use (Pushover, Email in this case). Your ini file should look like this:
 ```
 [GENERAL]
 SYNCTIME = 3
@@ -48,9 +48,29 @@ In the example montainer.ini file, the program checks for DOWNTIME every 3 secon
 
 Afterwards, you can run the program through this docker command:
 ```
-docker run –name montainer -d \
+docker run --name montainer -d \
     -v /etc/localtime:/etc/localtime:ro \
     -v /var/run/docker.sock:/var/run/docker.sock \
     -v /path/to/montainer.ini:/usr/src/app/montainer.ini \
     hally0/montainer:latest
+```
+Example docker-composer with Nginx health test:
+```
+services:
+    montainer:
+        image: "hally0/montainer"
+        container_name: montainer
+        volumes:
+         - /etc/localtime:/etc/localtime:ro
+         - /var/run/docker.sock:/var/run/docker.sock
+         - /path/to/montainer.ini:/usr/src/app/montainer.ini
+        restart: unless_stopped
+    nginx:
+        image: "nginx:alpine"
+        container_name: nginx
+        healthcheck:
+          test: curl -sS http://127.0.0.1:80 || exit 1
+          interval: 20s
+          timeout: 5s
+          retries: 3
 ```

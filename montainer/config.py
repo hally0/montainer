@@ -2,15 +2,7 @@ import configparser
 import logging
 
 
-_NOTIFIERS = ["PUSHBULLET", "PUSHOVER", "EMAIL", "DISCORD", "SLACK"]
-
-# Making a validate method
-_CONFIG_SETTINGS = {"_SYNCTIME": (int, "GENERAL", 1),
-                    "_DOWNTIME": (int, "GENERAL", 30),
-                    "PB_TOKEN": (str, "PUSHBULLET", ""),
-                    "PO_TOKEN": (str, "PUSHOVER", ""),
-                    "USER_TOKEN": (str, "PUSHOVER", ""),
-                    }
+_NOTIFIERS = ["PUSHBULLET", "PUSHOVER", "EMAIL"]
 
 
 class Config(object):
