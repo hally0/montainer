@@ -64,7 +64,7 @@ services:
          - /etc/localtime:/etc/localtime:ro
          - /var/run/docker.sock:/var/run/docker.sock
          - /path/to/montainer.ini:/usr/src/app/montainer.ini
-        restart: unless_stopped
+        restart: unless-stopped
     nginx:
         image: "nginx:alpine"
         container_name: nginx
