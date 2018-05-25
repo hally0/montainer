@@ -46,20 +46,23 @@ class EventUtilities(list):
     def exist_remove(self, event):
         """Checks if a event exists through id and docker-compose id"""
         docker_number = event.get("Actor")["Attributes"]["com.docker.compose.container-number"]
+        docker_compose_hash = event.get("Actor")["Attributes"]['com.docker.compose.config-hash']
         for events in self:
             if events.get("id") == event.get("id"):
                 logging.debug("Id Matches")
                 self.remove(events)
                 return True
-            try:
-                if events.get('Actor')['Attributes']['com.docker.compose.container-number'] == docker_number:
-                    logging.debug("Found docker-compose number label on the container:" + docker_number)
-                    self.remove(events)
-                    return True
-            except KeyError:
-                logging.debug("Could not find the label or id.")
-                return False
 
+            elif event.get("Actor")["Attributes"]['com.docker.compose.config-hash'] == docker_compose_hash:
+                logging.debug("Found docker-compose config hash on the container:" + docker_compose_hash)
+                self.remove(events)
+                return True
+
+            elif event.get("Actor")["Attributes"]['com.docker.compose.config-hash'] == docker_compose_hash and \
+                    events.get('Actor')['Attributes']['com.docker.compose.container-number'] == docker_number:
+                logging.debug("Found docker-compose config hash and config id on the container:" + docker_number)
+                self.remove(events)
+                return True
         return False
 
     def get_events_attributes(self, event):
