@@ -5,6 +5,9 @@ import time
 NOTIFIERS_TO_STRING = {'stop': {"Title": "A container stopped on server IP: {ip}, Date: {time}",
                                 "Body": "Container name: {container}, image: ({image})",
                                 },
+                       'kill': {"Title": "A container stopped on server IP: {ip}, Date: {time}",
+                                "Body": "Container name: {container}, image: ({image})",
+                                },
                        'health_status: unhealthy': {"Title": "A container has failed a health test"
                                                              " on server IP: {ip}, Date: {time}",
                                                     "Body": "Container name: {container}, image: ({image})",
