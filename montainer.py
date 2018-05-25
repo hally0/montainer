@@ -30,7 +30,7 @@ def check_event(e):
     event_name = e.get("Actor")["Attributes"]['name']
     event_status = e.get("status")
     logging.debug("Checking event: Container name: {}, container status: {}".format(event_name, event_status))
-    if event_status == "stop" or event_status == "health_status: unhealthy":
+    if event_status == "stop" or event_status == "kill" or event_status == "health_status: unhealthy":
         logging.debug("Appending event to list ")
         if not events_list.exist_append(e):
             events_list.append(e)
@@ -112,7 +112,7 @@ if __name__ == '__main__':
     notifier_list = eventutilities.EventUtilities()
 
     # Filters for the event stream.
-    filters = {"type": ["container"], "event": ["stop", "start", "health_status"]}
+    filters = {"type": ["container"], "event": ["stop", "start", "kill", "health_status"]}
     client = docker.from_env()
 
     # Make a thread to read the event stream
