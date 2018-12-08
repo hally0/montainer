@@ -20,7 +20,7 @@ PB_TOKEN = Insert Pushbullet token here
  
 [PUSHOVER]
 PO_TOKEN = Insert Pushover token here
-USER_TOKEN = Insert Pushover user token here
+USER_TOKEN = Insert Pushover user token heree
  
 [EMAIL]
 SMTP_ADDRESS = Your SMTP address
