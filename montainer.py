@@ -30,6 +30,7 @@ def check_event(e):
     event_name = e.get("Actor")["Attributes"]['name']
     event_status = e.get("status")
     logging.debug("Checking event: Container name: {}, container status: {}".format(event_name, event_status))
+    
     if event_status == "stop" or event_status == "kill" or event_status == "health_status: unhealthy":
         logging.debug("Appending event to list ")
         if not events_list.exist_append(e):
