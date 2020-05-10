@@ -1,6 +1,7 @@
 import logging
 from requests import get
 import time
+import docker
 
 NOTIFIERS_TO_STRING = {'stop': {"Title": "A container stopped on server IP: {ip}, Date: {time}",
                                 "Body": "Container name: {container}, image: ({image})",
@@ -10,10 +11,11 @@ NOTIFIERS_TO_STRING = {'stop': {"Title": "A container stopped on server IP: {ip}
                                 },
                        'health_status: unhealthy': {"Title": "A container has failed a health test"
                                                              " on server IP: {ip}, Date: {time}",
-                                                    "Body": "Container name: {container}, image: ({image})",
+                                                    "Body": "Container name: {container}, image: ({image}), logs: ({log})",
                                                     },
                        'Multiple': {"Title": "Multiple containers are having issues on IP: {ip}, Date: {time}",
-                                    "Body": "Container name: {container} \nStatus: {status} \nImage: ({image})"
+                                    "Body": "Container name: {container} \nStatus: {status} \nImage: ({image})",
+                                    "Body_unhealthy": "Container name: {container} \nStatus: {status} \nImage: ({image}) \nLogs=({log})"
 
                                     }
                        }
@@ -48,8 +50,16 @@ class EventUtilities(list):
 
     def exist_remove(self, event):
         """Checks if a event exists through id and docker-compose id"""
-        docker_number = event.get("Actor")["Attributes"]["com.docker.compose.container-number"]
-        docker_compose_hash = event.get("Actor")["Attributes"]['com.docker.compose.config-hash']
+        try:
+            docker_number = event.get("Actor")["Attributes"]["com.docker.compose.container-number"]
+        except Exception as ex:
+            print("Could not find key: {0}. Montainer will compare without docker compose container number.".format(ex))
+
+        try:
+            docker_compose_hash = event.get("Actor")["Attributes"]['com.docker.compose.config-hash']
+        except Exception as ex:
+            print("Could not find key: {0}. Montainer will compare without docker compose hash.".format(ex))
+
         for events in self:
             if events.get("id") == event.get("id"):
                 logging.debug("Id Matches")
@@ -70,6 +80,7 @@ class EventUtilities(list):
 
     def get_events_attributes(self, event):
         """Gathers the necessary event attributes, and return them"""
+        client = docker.from_env()
         index = self.return_index(event)
         event = self.__getitem__(index)
         name = event.get("Actor")["Attributes"]["name"]
@@ -80,8 +91,10 @@ class EventUtilities(list):
                                                  str(time_local[0]).zfill(2), str(time_local[1]).zfill(2),
                                                  str(time_local[2]).zfill(2), str(time_local[3]).zfill(2),
                                                  str(time_local[4]).zfill(2), str(time_local[5]).zfill(2),
-                                                 )
-        return name, image, status, time_format
+        )
+        c = client.containers.get(event.get('id'))
+        container_log = c.attrs['State']['Health']['Log'][0]['Output'].rstrip()
+        return name, image, status, time_format, container_log
 
     def event_logger(self, event):
         """Returns a string of event attributes for logging"""
@@ -90,19 +103,26 @@ class EventUtilities(list):
 
     def build_text_event(self, event):
         """Return a string of event attributes for single notifications"""
-        name, image, status, time_format = self.get_events_attributes(event)
+        name, image, status, time_format, container_log = self.get_events_attributes(event)
         liste = NOTIFIERS_TO_STRING
         title = liste[status]['Title'].format(ip=_IP, container=name, time=time_format,)
-        body = liste[status]['Body'].format(container=name, image=image, time=time_format)
+        if status == "health_status: unhealthy":
+            body = liste[status]['Body'].format(container=name, image=image, time=time_format, log=container_log)
+        else:
+            body = liste[status]['Body'].format(container=name, image=image, time=time_format)
+
         return title, body
 
     def build_test_event_list(self, events):
         """Return a string of event attributes as a summary of events"""
-        name, image, status, time_format = self.get_events_attributes(events[0])
+        name, image, status, time_format, container_log = self.get_events_attributes(events[0])
         liste = NOTIFIERS_TO_STRING
-        title = liste['Multiple']['Title'].format(ip=_IP, container=name, time=time_format,)
+        title = liste['Multiple']['Title'].format(ip=_IP, time=time_format,)
         body = ""
         for event in events:
-            name, image, status, time_format = self.get_events_attributes(event)
-            body += liste['Multiple']['Body'].format(container=name, status=status, image=image) + "\n\n"
+            name, image, status, time_format, container_log = self.get_events_attributes(event)
+            if status == "health_status: unhealthy":
+                body += liste['Multiple']['Body_unhealthy'].format(container=name, status=status, image=image, log=container_log) + "\n\n"
+            else:
+                body += liste['Multiple']['Body'].format(container=name, status=status, image=image) + "\n\n"
         return title, body

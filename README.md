@@ -50,8 +50,8 @@ Afterwards, you can run the program through this docker command:
 ```
 docker run --name montainer -d \
     -v /etc/localtime:/etc/localtime:ro \
-    -v /var/run/docker.sock:/var/run/docker.sock \
-    -v /path/to/montainer.ini:/usr/src/app/montainer.ini \
+    -v /var/run/docker.sock:/var/run/docker.sock:ro \
+    -v /path/to/montainer.ini:/usr/src/app/montainer.ini:ro \
     hally0/montainer:latest
 ```
 Example docker-composer with Nginx health test:
