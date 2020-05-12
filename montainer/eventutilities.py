@@ -50,14 +50,15 @@ class EventUtilities(list):
 
     def exist_remove(self, event):
         """Checks if a event exists through id and docker-compose id"""
+        global docker_compose_hash, docker_number
         try:
             docker_number = event.get("Actor")["Attributes"]["com.docker.compose.container-number"]
-        except Exception as ex:
+        except KeyError as ex:
             print("Could not find key: {0}. Montainer will compare without docker compose container number.".format(ex))
 
         try:
             docker_compose_hash = event.get("Actor")["Attributes"]['com.docker.compose.config-hash']
-        except Exception as ex:
+        except KeyError as ex:
             print("Could not find key: {0}. Montainer will compare without docker compose hash.".format(ex))
 
         for events in self:
@@ -65,17 +66,19 @@ class EventUtilities(list):
                 logging.debug("Id Matches")
                 self.remove(events)
                 return True
+            try:
+                if event.get("Actor")["Attributes"]['com.docker.compose.config-hash'] == docker_compose_hash:
+                    logging.debug("Found docker-compose config hash on the container:" + docker_compose_hash)
+                    self.remove(events)
+                    return True
 
-            elif event.get("Actor")["Attributes"]['com.docker.compose.config-hash'] == docker_compose_hash:
-                logging.debug("Found docker-compose config hash on the container:" + docker_compose_hash)
-                self.remove(events)
-                return True
-
-            elif event.get("Actor")["Attributes"]['com.docker.compose.config-hash'] == docker_compose_hash and \
-                    events.get('Actor')['Attributes']['com.docker.compose.container-number'] == docker_number:
-                logging.debug("Found docker-compose config hash and config id on the container:" + docker_number)
-                self.remove(events)
-                return True
+                elif event.get("Actor")["Attributes"]['com.docker.compose.config-hash'] == docker_compose_hash and \
+                        events.get('Actor')['Attributes']['com.docker.compose.container-number'] == docker_number:
+                    logging.debug("Found docker-compose config hash and config id on the container:" + docker_number)
+                    self.remove(events)
+                    return True
+            except KeyError as ex:
+                logging.debug("Docker-compose is not used")
         return False
 
     def get_events_attributes(self, event):
@@ -93,8 +96,13 @@ class EventUtilities(list):
                                                  str(time_local[4]).zfill(2), str(time_local[5]).zfill(2),
         )
         c = client.containers.get(event.get('id'))
-        container_log = c.attrs['State']['Health']['Log'][0]['Output'].rstrip()
-        return name, image, status, time_format, container_log
+        try:
+            container_log = c.attrs['State']['Health']['Log'][0]['Output'].rstrip()
+            return name, image, status, time_format, container_log
+        except KeyError as ex:
+            print("Container does not have any health checks")
+
+        return name, image, status, time_format
 
     def event_logger(self, event):
         """Returns a string of event attributes for logging"""
