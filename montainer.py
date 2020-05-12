@@ -129,7 +129,7 @@ if __name__ == '__main__':
                 logging.debug("{} has been down for more than: {}s. Appending event to notifier stack".format(
                     event.get("Actor")["Attributes"]["name"], _DOWNTIME))
                 notifier_list.append(event)
-                if not notifier_thread: # check if notifier thread exist
+                if not notifier_thread:  # check if notifier thread exist
                     thread_notifier = threading.Thread(name="Notifier", target=notify_stack, daemon=True, args=(event,))
                     thread_notifier.start()
                     notifier_thread = True
